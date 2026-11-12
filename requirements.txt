@@ -1,0 +1,3 @@
+yt-dlp
+demucs==4.0.1
+imageio-ffmpeg
