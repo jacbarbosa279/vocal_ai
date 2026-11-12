@@ -232,6 +232,6 @@ If the script cannot create or write to the target folder:
 This project does not enforce licensing or legal compliance checks. You are responsible for ensuring that the sources you download and process are authorized for your intended use.
 
 ## Credits
-Demucs for source separation
-yt-dlp for downloading
+Demucs for source separation,
+yt-dlp for downloading, and
 FFmpeg for audio conversion
