@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Keep notebook files out of GitHub language statistics so the project is classified as Python
+*.ipynb linguist-vendored
+vocal_ai.ipynb linguist-vendored
