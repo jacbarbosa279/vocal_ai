@@ -1,8 +1,11 @@
-"""Baixa áudio autorizado do YouTube e separa voz e instrumental com Demucs.
+"""Baixa áudio do YouTube e separa voz e instrumental com Demucs.
 
 Instale as dependências com
 ``.venv\\Scripts\\python.exe -m pip install -r requirements.txt``.
-Exemplo: ``.venv\\Scripts\\python.exe separar_vozes.py URL --confirmo-direitos``
+Exemplo: ``.venv\\Scripts\\python.exe separar_vozes.py``
+
+Observação: use torch/torchaudio 2.8.x (veja requirements.txt) para que o
+Demucs consiga ler o áudio sem depender do TorchCodec.
 """
 
 from __future__ import annotations
@@ -31,11 +34,10 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Separa voz e instrumental de um vídeo do YouTube."
     )
-    parser.add_argument("url", help="Link de um vídeo do YouTube")
     parser.add_argument(
-        "--confirmo-direitos",
-        action="store_true",
-        help="Confirma que você tem autorização para baixar e processar o áudio",
+        "url",
+        nargs="?",
+        help="Link do vídeo do YouTube (se omitido, será solicitado)",
     )
     parser.add_argument(
         "--saida",
@@ -52,26 +54,70 @@ def parse_args() -> argparse.Namespace:
 
 
 def validate_youtube_url(url: str) -> None:
-    parsed_url = urlsplit(url)
+    clean_url = url.strip()
+    if not clean_url:
+        raise ValueError("Informe um link válido de vídeo do YouTube.")
+
+    if "://" not in clean_url:
+        clean_url = f"https://{clean_url}"
+
+    parsed_url = urlsplit(clean_url)
+    hostname = (parsed_url.hostname or "").lower()
     if (
         parsed_url.scheme not in {"http", "https"}
-        or parsed_url.hostname not in YOUTUBE_HOSTS
+        or not hostname
+        or hostname not in YOUTUBE_HOSTS
     ):
         raise ValueError("Informe um link válido de vídeo do YouTube.")
 
 
+def convert_to_wav(ffmpeg_path: str, source: Path, target_dir: Path) -> Path:
+    """Converte o áudio baixado para WAV estéreo de 44,1 kHz."""
+    wav_path = target_dir / f"{source.stem}.wav"
+    result = subprocess.run(
+        [
+            ffmpeg_path,
+            "-y",
+            "-i",
+            str(source),
+            "-ar",
+            "44100",
+            "-ac",
+            "2",
+            str(wav_path),
+        ],
+        capture_output=True,
+        text=True,
+        errors="replace",
+    )
+    if result.returncode != 0:
+        details = (result.stderr or "").strip().splitlines()[-5:]
+        raise RuntimeError(
+            "Falha ao converter o áudio para WAV com o FFmpeg: "
+            + " | ".join(details)
+        )
+    if not wav_path.is_file():
+        raise FileNotFoundError(
+            f"O arquivo WAV convertido não foi encontrado: {wav_path}"
+        )
+    return wav_path
+
+
 def main() -> int:
     args = parse_args()
-    if not args.confirmo_direitos:
-        print(
-            "Confirme que tem autorização para baixar e processar este áudio "
-            "usando --confirmo-direitos.",
-            file=sys.stderr,
-        )
+    try:
+        url = args.url or input(
+            "Cole o link do YouTube aqui e pressione Enter: "
+        ).strip()
+    except EOFError:
+        print("Nenhum link foi informado.", file=sys.stderr)
+        return 2
+    if not url:
+        print("Nenhum link foi informado.", file=sys.stderr)
         return 2
 
     try:
-        validate_youtube_url(args.url)
+        validate_youtube_url(url)
     except ValueError as error:
         print(f"Erro: {error}", file=sys.stderr)
         return 2
@@ -120,7 +166,7 @@ def main() -> int:
                 "no_warnings": True,
             }
             with yt_dlp.YoutubeDL(download_options) as downloader:
-                info = downloader.extract_info(args.url, download=True)
+                info = downloader.extract_info(url, download=True)
                 audio_path = Path(downloader.prepare_filename(info))
 
             if not audio_path.is_file():
@@ -128,11 +174,16 @@ def main() -> int:
                     f"O arquivo de áudio baixado não foi encontrado: {audio_path}"
                 )
 
+            # Converte para WAV para evitar problemas de decodificação
+            # de formatos como .webm/.m4a no Demucs.
+            audio_path = convert_to_wav(ffmpeg_path, audio_path, download_dir)
+
             command = [
                 sys.executable,
                 "-m",
-                "demucs.separate",
+                "demucs_runner",
                 "--two-stems=vocals",
+                "--mp3",
                 "--out",
                 str(args.saida.resolve()),
             ]
@@ -154,7 +205,7 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
-    except FileNotFoundError as error:
+    except (FileNotFoundError, RuntimeError) as error:
         print(f"Erro: {error}", file=sys.stderr)
         return 1
 
