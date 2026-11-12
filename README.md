@@ -24,6 +24,23 @@ The resulting output is useful for:
 
 The script follows a straightforward pipeline:
 
+```mermaid
+flowchart LR
+    A[User / CLI] --> B[separar_vozes.py]
+    B --> C[Validate YouTube URL]
+    C --> D[Check dependencies]
+    D --> E[Detect FFmpeg]
+    E --> F[Download audio with yt-dlp]
+    F --> G[Run Demucs separation]
+    G --> H[Save stems in output folder]
+    H --> I[Vocals + accompaniment output]
+
+    B -. optional .-> J[--saida output directory]
+    B -. optional .-> K[--dispositivo cpu/cuda]
+    G -. uses .-> L[PyTorch + Demucs]
+    E -. uses .-> M[FFmpeg binary]
+```
+
 1. CLI input
    - receives a YouTube URL from the command line or interactive prompt
    - optional output directory override via `--saida`
