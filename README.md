@@ -233,5 +233,5 @@ This project does not enforce licensing or legal compliance checks. You are resp
 
 ## Credits
 Demucs for source separation,
-yt-dlp for downloading, and
+yt-dlp for downloading and
 FFmpeg for audio conversion
