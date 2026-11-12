@@ -181,7 +181,7 @@ def main() -> int:
             command = [
                 sys.executable,
                 "-m",
-                "demucs_runner",
+                "demucs.separate",
                 "--two-stems=vocals",
                 "--mp3",
                 "--out",
