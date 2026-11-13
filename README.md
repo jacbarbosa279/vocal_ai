@@ -77,8 +77,6 @@ vocal_ai/
 ├── README.md
 ├── requirements.txt
 ├── separar_vozes.py
-├── separacoes/
-│   └── ... generated output files ...
 └── .venv/                 # optional local virtual environment
 ```
 
@@ -130,7 +128,7 @@ You can also provide the URL interactively if you omit it:
 Available options:
 
 - positional `url`: YouTube video URL
-- `--saida PATH`: output folder for generated stems (default: `./separacoes`)
+- `--saida PATH`: output folder for generated stems (default: the user's `Downloads` folder)
 - `--dispositivo {cpu,cuda}`: processing device to pass to Demucs
 
 Example:
@@ -141,12 +139,12 @@ Example:
 
 ## Output structure
 
-The script saves generated stems to the directory configured by `--saida` (default: `./separacoes`).
+The script saves generated stems to the directory configured by `--saida` (default: the user's `Downloads` folder).
 
 Typical structure:
 
 ```text
-separacoes/
+Downloads/
 ├── <video_id>/
 │   ├── vocals.wav
 │   ├── accompaniment.wav
@@ -160,6 +158,7 @@ Depending on the underlying Demucs output format and version, the exact filename
 Important notes:
 
 - the script creates the destination directory automatically
+- the default destination is `Downloads`; use `--saida PATH` to choose another folder
 - intermediate media is stored in a temporary folder during processing
 - output files remain in the configured output directory after the separation completes
 

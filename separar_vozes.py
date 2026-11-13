@@ -42,8 +42,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--saida",
         type=Path,
-        default=Path("separacoes"),
-        help="Pasta para salvar as faixas (padrão: ./separacoes)",
+        default=Path.home() / "Downloads",
+        help="Pasta para salvar as faixas (padrão: Downloads do usuário)",
     )
     parser.add_argument(
         "--dispositivo",
